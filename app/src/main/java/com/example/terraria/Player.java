@@ -22,6 +22,8 @@ public class Player {
     private int xtenths = 0;
     private int ytenths = 0;
 
+    private int damage = 10;
+
     private int xpixel;
     private int ypixel;
 
@@ -91,4 +93,8 @@ public class Player {
     public void setypixel(int tempypixel) { ypixel = tempypixel; }
 
     public int getypixel() { return ypixel; }
+
+    public void setdamage(int temp_damage) { damage = temp_damage; }
+
+    public int get_damage() { return damage; }
 }

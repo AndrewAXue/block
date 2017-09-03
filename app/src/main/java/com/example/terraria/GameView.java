@@ -41,6 +41,7 @@ public class GameView extends SurfaceView implements Runnable {
     int height;
     int width;
 
+
     boolean mining = false;
     int x_mining_block;
     int y_mining_block;
@@ -51,6 +52,8 @@ public class GameView extends SurfaceView implements Runnable {
     block block_char[][] = new block[400][100];
 
     int xdiff;
+
+    boolean jumping = false;
 
     xblock_stat[] xblock_stats = new xblock_stat[10];
     //yblock_stat[] yblock_stats = new yblock_stat[10];
@@ -139,6 +142,7 @@ public class GameView extends SurfaceView implements Runnable {
         player = new Player(context,50,60,block_size*2,block_size);
         player.setxpixel(height/2-player.getwidth()/2);
         player.setypixel(width/2-player.getheight()/2);
+        Log.d("debug","ypixel "+player.getypixel());
         /*
         Random ballspawn = new Random();
         ball = new Ball(ballspawn.nextInt(width-200)+100,player.getY()-300);
@@ -164,6 +168,18 @@ public class GameView extends SurfaceView implements Runnable {
                 block_char[k][i] = new block(empty);
             }
         }
+
+        block_char[40][60] = new block(dirt);
+        block_char[53][60] = new block(dirt);
+
+        block_char[55][59] = new block(empty);
+        block_char[55][58] = new block(empty);
+        block_char[55][57] = new block(empty);
+        block_char[55][56] = new block(empty);
+        block_char[55][55] = new block(empty);
+
+        block_char[54][56] = new block(empty);
+        block_char[54][55] = new block(empty);
         
         for (int i=0;i<10;i++){
             xblock_stats[i] = new xblock_stat();
@@ -205,18 +221,19 @@ public class GameView extends SurfaceView implements Runnable {
         double pyta2 = Math.sqrt(Math.pow(xpos-(width-100),2)+Math.pow(ypos-(height/2+100),2));
         double pyta3 = Math.sqrt(Math.pow(xpos-(width-100),2)+Math.pow(ypos-(height/2),2));
 
-        if (e.getAction()==MotionEvent.ACTION_DOWN){
+        if (e.getAction()==MotionEvent.ACTION_DOWN||e.getAction()==MotionEvent.ACTION_MOVE){
             xdiff = xpos;
-            Log.d("debug","yblock is "+ypixel_to_ind(xpos)+" xblock is "+xpixel_to_indice(ypos));
+            //Log.d("debug","clicked at "+xpos+" "+ypos);
+            Log.d("debug","xblock is "+xpixel_to_indice(ypos)+" yblock is "+ypixel_to_ind(xpos));
             if (pyta1<=35){
-                Log.d("debug","left");
+                //Log.d("debug","left");
                 player.setdx(-1);
                 if (block_char[xpixel_to_indice(player.getxpixel()-(player.getdx()*block_size/10))][70].get_id()!=0){
                     //player.dir=0;
                 }
             }
             else if (pyta2<=35){
-                Log.d("debug","right");
+                //Log.d("debug","right");
                 player.setdx(1);
                 if (block_char[xpixel_to_indice(player.getxpixel()+player.getwidth()+player.getdx()*block_size/10)][70].get_id()!=0){
                   //  player.dir=0;
@@ -224,12 +241,12 @@ public class GameView extends SurfaceView implements Runnable {
             }
             else if (pyta3<=35){
                 Log.d("debug","jumped");
-                player.setdy(-5);
+                jumping = true;
             }
             else{
                 mining = true;
                 x_mining_block = xpixel_to_indice(ypos);
-                y_mining_block = ypixel_to_ind(xpos);
+                y_mining_block = ypixel_to_ind(xpos)+2;
             }
         }
         else if (e.getAction()==MotionEvent.ACTION_UP){
@@ -248,10 +265,6 @@ public class GameView extends SurfaceView implements Runnable {
             }
             */
         }
-        else if (e.getAction()==MotionEvent.ACTION_MOVE){
-            x_mining_block = xpixel_to_indice(ypos);
-            y_mining_block = ypixel_to_ind(xpos);
-        }
         return true;
     }
 
@@ -262,10 +275,10 @@ public class GameView extends SurfaceView implements Runnable {
             control();
             draw();
             player_update_x();
-            //player_update_y();
+            player_update_y();
             if (mining){
                 block mined_block = block_char[x_mining_block][y_mining_block];
-                mined_block.take_damage(4);
+                mined_block.take_damage(player.get_damage());
                 if(!damaged.contains(mined_block)){
                     damaged.add(mined_block);
                 }
@@ -290,35 +303,89 @@ public class GameView extends SurfaceView implements Runnable {
     //Method to update y_coordinate of character
     public void player_update_y(){
         int cur_dy = player.getdy();
+        //Log.d("debug","current dy "+cur_dy);
         if (cur_dy<=0){
-            if (block_char[player.getX()][ypixel_to_ind(player.getypixel()+min(cur_dy*block_size/10,-block_size/10))].get_id()==0&&(player.getxtenths()==0 ||
-                    block_char[player.getX()+1][ypixel_to_ind(player.getypixel()+min(cur_dy*block_size/10,-block_size/10))].get_id()==0)){
-                Log.d("debug","should drop");
+            int ypixel_after_move = player.getypixel()+min(cur_dy*block_size/10-1,-1);
+            if (block_char[player.getX()][ypixel_to_ind(ypixel_after_move)].get_id()==0&&(player.getxtenths()==0 ||
+                    block_char[player.getX()+1][ypixel_to_ind(ypixel_after_move)].get_id()==0)){
+                Log.d("debug","should drop "+player.getX()+" "+ypixel_to_ind(ypixel_after_move)+" "+ypixel_after_move+" id "+block_char[player.getX()][ypixel_to_ind(ypixel_after_move)].get_id());
                 cur_dy-=1;
-                if (cur_dy<-10)cur_dy=-10;
-                player.setdy(cur_dy);
+                if (cur_dy<-5)cur_dy=-5;
             }
             else{
+                //Log.d("debug","hit bottom");
                 player.set_y_tenths(0);
-                player.setdy(0);
+                cur_dy=0;
             }
+            if (jumping){
+                if (cur_dy==0){
+                    cur_dy=10;
+                }
+                else jumping=false;
+            }
+            player.setdy(cur_dy);
         }
-
+        cur_dy = player.getdy();
+        if (cur_dy>0){
+            cur_dy-=1;
+            int ypixel_after_move = player.getypixel()+cur_dy*block_size/10;
+            if (block_char[player.getX()][ypixel_to_ind(ypixel_after_move)].get_id()!=0||(player.getxtenths()!=0 &&
+                    block_char[player.getX()+1][ypixel_to_ind(ypixel_after_move)].get_id()!=0)){
+                Log.d("debug","hit head");
+                cur_dy=0;
+            }
+            player.setdy(cur_dy);
+        }
         int ytenths = player.getytenths();
         ytenths+=player.getdy();
         if (ytenths<=-1){
             ytenths+=10;
-            player.setY(player.getY()+1);
+            player.setY(player.getY()-1);
         }
         if (ytenths>=10){
             ytenths-=10;
-            player.setY(player.getY()-1);
+            player.setY(player.getY()+1);
         }
         player.set_y_tenths(ytenths);
     }
 
     //Method to update x_coordinate of character
     public void player_update_x(){
+        int cur_dx = player.getdx();
+        if (cur_dx<0&&-cur_dx>player.getxtenths()){
+            if (block_char[player.getX()-1][player.getY()].get_id()!=0||
+                    block_char[player.getX()-1][player.getY()+1].get_id()!=0){
+                Log.d("debug","hit left");
+                player.set_x_tenths(0);
+                player.setdx(0);
+            }
+            else if (player.getytenths()!=0&&block_char[player.getX()-1][player.getY()+2].get_id()!=0){
+                Log.d("debug","hit left");
+                player.set_x_tenths(0);
+                player.setdx(0);
+            }
+        }
+        if (cur_dx>0&&(cur_dx+player.getxtenths()>=10||player.getxtenths()==0)){
+            if (block_char[player.getX()+1][player.getY()].get_id()!=0||
+                    block_char[player.getX()+1][player.getY()+1].get_id()!=0){
+                player.set_x_tenths(0);
+                player.setdx(0);
+            }
+            else if (player.getxtenths()!=0&&(block_char[player.getX()+2][player.getY()].get_id()!=0||
+                    block_char[player.getX()+2][player.getY()+1].get_id()!=0)){
+                Log.d("debug","hit right");
+                player.setX(player.getX()+1);
+                player.set_x_tenths(0);
+                player.setdx(0);
+            }
+            else if (player.getytenths()!=0&&block_char[player.getX()+1][player.getY()+2].get_id()!=0){
+                Log.d("debug","hit right");
+                player.set_x_tenths(0);
+                player.setdx(0);
+            }
+
+        }
+
         int xtenths = player.getxtenths();
         xtenths+=player.getdx();
         if (xtenths<=-1){
@@ -433,7 +500,7 @@ public class GameView extends SurfaceView implements Runnable {
             int y_draw_pixel = player.getypixel()-ytenths*block_size/10;
             int y_ind = player.getY();
             while(true) {
-                if (y_draw_pixel<0)break;
+                if (y_draw_pixel+block_size<0)break;
                 int x_draw_pixel = player.getxpixel() - xtenths * block_size / 10 - block_size;
                 for (int i = 0; i < xstat.left_blocks; i++) {
                     block cur_block = block_char[player.getX() - 1 - i][y_ind];
@@ -483,6 +550,62 @@ public class GameView extends SurfaceView implements Runnable {
 
                 y_draw_pixel-=block_size;
                 y_ind--;
+            }
+
+            y_draw_pixel = player.getypixel()-ytenths*block_size/10+block_size;
+            y_ind = player.getY()+1;
+
+            while(true) {
+                if (y_draw_pixel+block_size>width)break;
+                int x_draw_pixel = player.getxpixel() - xtenths * block_size / 10 - block_size;
+                for (int i = 0; i < xstat.left_blocks; i++) {
+                    block cur_block = block_char[player.getX() - 1 - i][y_ind];
+                    paint.setColor(cur_block.get_back_col());
+                    canvas.drawRect(y_draw_pixel, x_draw_pixel, y_draw_pixel + block_size, x_draw_pixel + block_size, paint);
+                    paint.setColor(cur_block.get_fore_col());
+                    canvas.drawRect(y_draw_pixel + 2, x_draw_pixel + 2, y_draw_pixel + block_size - 2, x_draw_pixel + block_size - 2, paint);
+                    //canvas.drawRect(left,top,right,bottom)
+                    paint.setColor(Color.BLACK);
+                    for (int k = 0; k < 4; k++) {
+                        if (cur_block.get_cur_hp() < cur_block.get_max_hp() * (4 - k) / 4) {
+                            for (int z = 0; z < damage_states[k].length; z++) {
+                                canvas.drawRect(
+                                        y_draw_pixel + block_size / 2 + damage_states[k][z].left,
+                                        x_draw_pixel + block_size / 2 + damage_states[k][z].top,
+                                        y_draw_pixel + block_size / 2 + damage_states[k][z].right,
+                                        x_draw_pixel + block_size / 2 + damage_states[k][z].bottom, paint);
+                            }
+                        }
+                    }
+                    x_draw_pixel -= block_size;
+                }
+
+
+                x_draw_pixel = player.getxpixel() - xtenths * block_size / 10;
+                for (int i = 0; i < xstat.right_blocks; i++) {
+                    block cur_block = block_char[player.getX() + i][y_ind];
+                    paint.setColor(cur_block.get_back_col());
+                    canvas.drawRect(y_draw_pixel, x_draw_pixel, y_draw_pixel + block_size, x_draw_pixel + block_size, paint);
+                    paint.setColor(cur_block.get_fore_col());
+                    canvas.drawRect(y_draw_pixel + 2, x_draw_pixel + 2, y_draw_pixel + block_size - 2, x_draw_pixel + block_size - 2, paint);
+                    //canvas.drawRect(left,top,right,bottom)
+                    paint.setColor(Color.BLACK);
+                    for (int k = 0; k < 4; k++) {
+                        if (cur_block.get_cur_hp() < cur_block.get_max_hp() * (4 - k) / 4) {
+                            for (int z = 0; z < damage_states[k].length; z++) {
+                                canvas.drawRect(
+                                        y_draw_pixel + block_size / 2 + damage_states[k][z].left,
+                                        x_draw_pixel + block_size / 2 + damage_states[k][z].top,
+                                        y_draw_pixel + block_size / 2 + damage_states[k][z].right,
+                                        x_draw_pixel + block_size / 2 + damage_states[k][z].bottom, paint);
+                            }
+                        }
+                    }
+                    x_draw_pixel += block_size;
+                }
+
+                y_draw_pixel+=block_size;
+                y_ind++;
             }
 
 
