@@ -48,8 +48,8 @@ public class GameView extends SurfaceView implements Runnable {
     ArrayList<block> damaged = new ArrayList<block>();
 
     // First ind is X, second ind is Y
-    // 200 width, 100 height
-    block block_char[][] = new block[400][100];
+    // 600 width, 100 height
+    block block_char[][];
 
     int xdiff;
 
@@ -139,7 +139,7 @@ public class GameView extends SurfaceView implements Runnable {
         Log.d("debug","Width is "+width);
         Log.d("debug","Height is "+height);
 
-        player = new Player(context,50,60,block_size*2,block_size);
+        player = new Player(context,300,60,block_size*2,block_size);
         player.setxpixel(height/2-player.getwidth()/2);
         player.setypixel(width/2-player.getheight()/2);
         Log.d("debug","ypixel "+player.getypixel());
@@ -150,36 +150,45 @@ public class GameView extends SurfaceView implements Runnable {
         block empty = new block(0,Color.TRANSPARENT,Color.TRANSPARENT,1000,1000);
         block dirt = new block(1,Color.GREEN,Color.rgb(153,76,0),100,2);
         block stone = new block(2,Color.BLACK,Color.GRAY,100,2);
+        
+        block unpassable =  new block(-1, Color.BLACK,Color.BLACK,1000,1000);
+
+        block_char = new block[600][300];
 
         for (int i=0;i<30;i++){
-            for (int k=0;k<400;k++){
+            for (int k=0;k<block_char.length;k++){
                 block_char[k][i] = new block(stone);
             }
         }
 
         for (int i=30;i<60;i++){
-            for (int k=0;k<400;k++){
+            for (int k=0;k<block_char.length;k++){
                 block_char[k][i] = new block(dirt);
             }
         }
 
-        for (int i=60;i<100;i++){
-            for (int k=0;k<400;k++){
+        for (int i=60;i<200;i++){
+            for (int k=0;k<block_char.length;k++){
                 block_char[k][i] = new block(empty);
             }
         }
 
-        block_char[40][60] = new block(dirt);
-        block_char[53][60] = new block(dirt);
+        for (int i=200;i<300;i++){
+            for (int k=0;k<block_char.length;k++){
+                block_char[k][i] = new block(unpassable);
+            }
+        }
 
-        block_char[55][59] = new block(empty);
-        block_char[55][58] = new block(empty);
-        block_char[55][57] = new block(empty);
-        block_char[55][56] = new block(empty);
-        block_char[55][55] = new block(empty);
 
-        block_char[54][56] = new block(empty);
-        block_char[54][55] = new block(empty);
+
+        for (int i=500;i<600;i++){
+            for (int k=0;k<block_char[0].length;k++){
+                block_char[i][k] = new block(unpassable);
+                block_char[i-500][k] = new block(unpassable);
+            }
+
+        }
+
         
         for (int i=0;i<10;i++){
             xblock_stats[i] = new xblock_stat();
@@ -224,17 +233,17 @@ public class GameView extends SurfaceView implements Runnable {
         if (e.getAction()==MotionEvent.ACTION_DOWN||e.getAction()==MotionEvent.ACTION_MOVE){
             xdiff = xpos;
             //Log.d("debug","clicked at "+xpos+" "+ypos);
-            Log.d("debug","xblock is "+xpixel_to_indice(ypos)+" yblock is "+ypixel_to_ind(xpos));
+            //Log.d("debug","xblock is "+xpixel_to_indice(ypos)+" yblock is "+ypixel_to_ind(xpos));
             if (pyta1<=35){
                 //Log.d("debug","left");
-                player.setdx(-1);
+                player.setdx(-player.speed);
                 if (block_char[xpixel_to_indice(player.getxpixel()-(player.getdx()*block_size/10))][70].get_id()!=0){
                     //player.dir=0;
                 }
             }
             else if (pyta2<=35){
                 //Log.d("debug","right");
-                player.setdx(1);
+                player.setdx(player.speed);
                 if (block_char[xpixel_to_indice(player.getxpixel()+player.getwidth()+player.getdx()*block_size/10)][70].get_id()!=0){
                   //  player.dir=0;
                 }
@@ -302,33 +311,37 @@ public class GameView extends SurfaceView implements Runnable {
 
     //Method to update y_coordinate of character
     public void player_update_y(){
+        if (jumping){
+            if (player.getdy()==0)player.setdy(10);
+            jumping=false;
+        }
         int cur_dy = player.getdy();
         //Log.d("debug","current dy "+cur_dy);
-        if (cur_dy<=0){
+        if (cur_dy==0){
+            if (player.getytenths()!=0||(block_char[player.getX()][player.getY()-1].get_id()==0&&(player.getxtenths()==0||
+                block_char[player.getX()+1][player.getY()-1].get_id()==0))){
+                cur_dy-=1;
+            }
+            player.setdy(cur_dy);
+        }
+        else if (cur_dy<0&&cur_dy+player.getytenths()<=-1){
             int ypixel_after_move = player.getypixel()+min(cur_dy*block_size/10-1,-1);
             if (block_char[player.getX()][ypixel_to_ind(ypixel_after_move)].get_id()==0&&(player.getxtenths()==0 ||
                     block_char[player.getX()+1][ypixel_to_ind(ypixel_after_move)].get_id()==0)){
                 Log.d("debug","should drop "+player.getX()+" "+ypixel_to_ind(ypixel_after_move)+" "+ypixel_after_move+" id "+block_char[player.getX()][ypixel_to_ind(ypixel_after_move)].get_id());
                 cur_dy-=1;
-                if (cur_dy<-5)cur_dy=-5;
             }
             else{
-                //Log.d("debug","hit bottom");
+                Log.d("debug","hit bottom");
                 player.set_y_tenths(0);
                 cur_dy=0;
-            }
-            if (jumping){
-                if (cur_dy==0){
-                    cur_dy=10;
-                }
-                else jumping=false;
             }
             player.setdy(cur_dy);
         }
         cur_dy = player.getdy();
         if (cur_dy>0){
             cur_dy-=1;
-            int ypixel_after_move = player.getypixel()+cur_dy*block_size/10;
+            int ypixel_after_move = player.getypixel()+2*block_size+cur_dy*block_size/10;
             if (block_char[player.getX()][ypixel_to_ind(ypixel_after_move)].get_id()!=0||(player.getxtenths()!=0 &&
                     block_char[player.getX()+1][ypixel_to_ind(ypixel_after_move)].get_id()!=0)){
                 Log.d("debug","hit head");
@@ -463,35 +476,6 @@ public class GameView extends SurfaceView implements Runnable {
             canvas.drawRect(player.getypixel()+2,player.getxpixel()+2,player.getypixel()+player.getheight()-2,player.getxpixel()+player.getwidth()-2,paint);
 
 
-            paint.setColor(Color.BLACK);
-            paint.setStrokeWidth(2);
-            paint.setStyle(Paint.Style.STROKE);
-            //Drawing buttons for left and right movement
-            canvas.drawCircle(width-100,height/2-100,35,paint);
-            canvas.drawCircle(width-100,height/2+100,35,paint);
-            //Drawing button for jumping
-            canvas.drawCircle(width-100,height/2,35,paint);
-
-           // canvas.drawLine(startX,startY,stopX,stopY,paint);
-            paint.setStyle(Paint.Style.FILL);
-            canvas.drawCircle(width-100,height/2-100,1,paint);
-            canvas.drawLine(width-100,height/2-100-10,width-100+10,height/2-100+10,paint);
-            canvas.drawLine(width-100,height/2-100-10,width-100-10,height/2-100+10,paint);
-            canvas.drawLine(width-100-10,height/2-100+10,width-100+10,height/2-100+10,paint);
-
-            canvas.drawCircle(width-100,height/2+100,1,paint);
-            canvas.drawLine(width-100,height/2+100+10,width-100+10,height/2+100-10,paint);
-            canvas.drawLine(width-100,height/2+100+10,width-100-10,height/2+100-10,paint);
-            canvas.drawLine(width-100-10,height/2+100-10,width-100+10,height/2+100-10,paint);
-
-            canvas.drawCircle(width-100,height/2,1,paint);
-            canvas.drawLine(width-100+10,height/2,width-100-10,height/2+10,paint);
-            canvas.drawLine(width-100+10,height/2,width-100-10,height/2-10,paint);
-            canvas.drawLine(width-100-10,height/2+10,width-100-10,height/2-10,paint);
-
-
-            paint.setStyle(default_style);
-
 
             int xtenths = player.getxtenths();
             int ytenths = player.getytenths();
@@ -607,6 +591,32 @@ public class GameView extends SurfaceView implements Runnable {
                 y_draw_pixel+=block_size;
                 y_ind++;
             }
+
+            paint.setColor(Color.BLACK);
+            paint.setStrokeWidth(4);
+            paint.setStyle(Paint.Style.STROKE);
+            //Drawing buttons for left and right movement
+            canvas.drawCircle(width-100,height/2-100,35,paint);
+            canvas.drawCircle(width-100,height/2+100,35,paint);
+            //Drawing button for jumping
+            canvas.drawCircle(width-100,height/2,35,paint);
+
+            // canvas.drawLine(startX,startY,stopX,stopY,paint);
+            paint.setStyle(Paint.Style.FILL);
+            canvas.drawCircle(width-100,height/2-100,1,paint);
+            canvas.drawLine(width-100,height/2-100-10,width-100+10,height/2-100+10,paint);
+            canvas.drawLine(width-100,height/2-100-10,width-100-10,height/2-100+10,paint);
+            canvas.drawLine(width-100-10,height/2-100+10,width-100+10,height/2-100+10,paint);
+
+            canvas.drawCircle(width-100,height/2+100,1,paint);
+            canvas.drawLine(width-100,height/2+100+10,width-100+10,height/2+100-10,paint);
+            canvas.drawLine(width-100,height/2+100+10,width-100-10,height/2+100-10,paint);
+            canvas.drawLine(width-100-10,height/2+100-10,width-100+10,height/2+100-10,paint);
+
+            canvas.drawCircle(width-100,height/2,1,paint);
+            canvas.drawLine(width-100+10,height/2,width-100-10,height/2+10,paint);
+            canvas.drawLine(width-100+10,height/2,width-100-10,height/2-10,paint);
+            canvas.drawLine(width-100-10,height/2+10,width-100-10,height/2-10,paint);
 
 
             //canvas.drawRect(ball.getX(),ball.getY(),ball.getX()+ball.getleng(),ball.getY()+ball.getleng(),paint);

@@ -14,11 +14,12 @@ public class Player {
     //coordinates
     private int x;
     private int y;
-    private int height = 60;
-    private int width = 20;
+    private int height;
+    private int width;
     //motion speed of the character
     private int dx = 0;
     private int dy = 0;
+    int speed = 2;
     private int xtenths = 0;
     private int ytenths = 0;
 
@@ -62,7 +63,10 @@ public class Player {
 
     public int getdx() { return dx; }
 
-    public void setdy(int tempdy){ dy = tempdy; }
+    public void setdy(int tempdy){
+        if (tempdy<-9)tempdy=-9;
+        dy = tempdy;
+    }
 
     public int getdy() { return dy; }
 
