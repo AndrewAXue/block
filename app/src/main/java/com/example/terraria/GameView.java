@@ -212,10 +212,12 @@ public class GameView extends SurfaceView implements Runnable {
             xblock_stats[i].right_blocks = right_blocks;
         }
 
+        /*
         for (int i=0;i<10;i++){
             xblock_stat temp = xblock_stats[i];
             Log.d("debug","first pixel "+temp.first_block_pixel+" right blocks "+temp.right_blocks+" left blocks "+temp.left_blocks+" numblock "+temp.blocks_on_screen);
         }
+        */
 
         //initializing drawing objects
         surfaceHolder = getHolder();
@@ -233,20 +235,14 @@ public class GameView extends SurfaceView implements Runnable {
         if (e.getAction()==MotionEvent.ACTION_DOWN||e.getAction()==MotionEvent.ACTION_MOVE){
             xdiff = xpos;
             //Log.d("debug","clicked at "+xpos+" "+ypos);
-            //Log.d("debug","xblock is "+xpixel_to_indice(ypos)+" yblock is "+ypixel_to_ind(xpos));
+            //Log.d("debug","xblock is "+xpixel_to_ind(ypos)+" yblock is "+ypixel_to_ind(xpos));
             if (pyta1<=35){
                 //Log.d("debug","left");
                 player.setdx(-player.speed);
-                if (block_char[xpixel_to_indice(player.getxpixel()-(player.getdx()*block_size/10))][70].get_id()!=0){
-                    //player.dir=0;
-                }
             }
             else if (pyta2<=35){
                 //Log.d("debug","right");
                 player.setdx(player.speed);
-                if (block_char[xpixel_to_indice(player.getxpixel()+player.getwidth()+player.getdx()*block_size/10)][70].get_id()!=0){
-                  //  player.dir=0;
-                }
             }
             else if (pyta3<=35){
                 Log.d("debug","jumped");
@@ -254,7 +250,7 @@ public class GameView extends SurfaceView implements Runnable {
             }
             else{
                 mining = true;
-                x_mining_block = xpixel_to_indice(ypos);
+                x_mining_block = xpixel_to_ind(ypos);
                 y_mining_block = ypixel_to_ind(xpos)+2;
             }
         }
@@ -325,10 +321,9 @@ public class GameView extends SurfaceView implements Runnable {
             player.setdy(cur_dy);
         }
         else if (cur_dy<0&&cur_dy+player.getytenths()<=-1){
-            int ypixel_after_move = player.getypixel()+min(cur_dy*block_size/10-1,-1);
-            if (block_char[player.getX()][ypixel_to_ind(ypixel_after_move)].get_id()==0&&(player.getxtenths()==0 ||
-                    block_char[player.getX()+1][ypixel_to_ind(ypixel_after_move)].get_id()==0)){
-                Log.d("debug","should drop "+player.getX()+" "+ypixel_to_ind(ypixel_after_move)+" "+ypixel_after_move+" id "+block_char[player.getX()][ypixel_to_ind(ypixel_after_move)].get_id());
+            if (block_char[player.getX()][player.getY()-1].get_id()==0&&(player.getxtenths()==0 ||
+                    block_char[player.getX()+1][player.getY()-1].get_id()==0)){
+                Log.d("debug","should drop");
                 cur_dy-=1;
             }
             else{
@@ -341,11 +336,21 @@ public class GameView extends SurfaceView implements Runnable {
         cur_dy = player.getdy();
         if (cur_dy>0){
             cur_dy-=1;
-            int ypixel_after_move = player.getypixel()+2*block_size+cur_dy*block_size/10;
-            if (block_char[player.getX()][ypixel_to_ind(ypixel_after_move)].get_id()!=0||(player.getxtenths()!=0 &&
-                    block_char[player.getX()+1][ypixel_to_ind(ypixel_after_move)].get_id()!=0)){
-                Log.d("debug","hit head");
-                cur_dy=0;
+            if (player.getytenths()==0){
+                if(block_char[player.getX()][player.getY()+2].get_id()!=0||(player.getxtenths()!=0 &&
+                        block_char[player.getX()+1][player.getY()+2].get_id()!=0)){
+                    Log.d("debug", "hit head");
+                    cur_dy = 0;
+                }
+            }
+            else if (player.getytenths()+cur_dy>=10){
+                if (block_char[player.getX()][player.getY()+3].get_id()!=0||(player.getxtenths()!=0 &&
+                        block_char[player.getX()+1][player.getY()+3].get_id()!=0)){
+                    Log.d("debug", "hit head");
+                    cur_dy = 0;
+                    player.setY(player.getY()+1);
+                    player.set_y_tenths(0);
+                }
             }
             player.setdy(cur_dy);
         }
@@ -412,7 +417,7 @@ public class GameView extends SurfaceView implements Runnable {
         player.set_x_tenths(xtenths);
     }
 
-    public int xpixel_to_indice(int xpixel){
+    public int xpixel_to_ind(int xpixel){
         int xtenths = player.getxtenths();
         int player_first_pix = player.getxpixel()-xtenths*block_size/10;
         if (xpixel==player_first_pix){
